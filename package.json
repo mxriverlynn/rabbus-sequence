@@ -1,0 +1,26 @@
+{
+  "name": "rabbus-sequence",
+  "version": "0.0.1",
+  "description": "process messages in sequential order with Rabbus and RabbitMQ",
+  "main": "index.js",
+  "scripts": {
+    "test": "grunt specs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/derickbailey/rabbus-sequence"
+  },
+  "keywords": [
+    "rabbitmq",
+    "wascally",
+    "rabbus",
+    "sequence",
+    "order"
+  ],
+  "author": "Derick Bailey",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/derickbailey/rabbus-sequence/issues"
+  },
+  "homepage": "https://github.com/derickbailey/rabbus-sequence"
+}
