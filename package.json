@@ -2,7 +2,7 @@
   "name": "rabbus-sequence",
   "version": "0.0.1",
   "description": "process messages in sequential order with Rabbus and RabbitMQ",
-  "main": "index.js",
+  "main": "sequence/index.js",
   "scripts": {
     "test": "grunt specs"
   },
@@ -22,5 +22,13 @@
   "bugs": {
     "url": "https://github.com/derickbailey/rabbus-sequence/issues"
   },
-  "homepage": "https://github.com/derickbailey/rabbus-sequence"
+  "homepage": "https://github.com/derickbailey/rabbus-sequence",
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-contrib-jshint": "^0.11.2",
+    "grunt-contrib-watch": "^0.6.1",
+    "grunt-jasmine-nodejs": "^1.4.0",
+    "rabbus": "^0.4.0",
+    "wascally": "^0.2.5"
+  }
 }

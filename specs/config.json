@@ -1,0 +1,6 @@
+{
+  "server": "localhost",
+  "vhost": "/rabbus-specs",
+  "user": "rabbus",
+  "pass": "rabbus"
+}
