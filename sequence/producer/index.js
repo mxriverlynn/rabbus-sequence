@@ -13,6 +13,13 @@ function Producer(options){
 
 Producer.prototype.middleware = function(message, headers, actions){
   var keyName = this.options.key;
+
+  // don't do anything if there is no key
+  if (!(keyName in message)){
+    return actions.next();
+  }
+
+  // found the key, so process it
   var value = message[keyName];
   storage.getSequence(keyName, value, function(err, sequence){
     if (err) { return actions.error(err); }

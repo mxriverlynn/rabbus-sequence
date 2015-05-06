@@ -16,6 +16,12 @@ Consumer.prototype.middleware = function(message, properties, actions){
   var value = message[keyName];
   var msgSeq = properties.headers["_rabbus_sequence"];
 
+  // do nothing if there is no sequence header
+  if (!msgSeq){
+    return actions.next();
+  }
+
+  // found the sequence header, so handle it.
   storage.getSequence(keyName, value, function(err, sequence){
     if (err) { return actions.error(err); }
 

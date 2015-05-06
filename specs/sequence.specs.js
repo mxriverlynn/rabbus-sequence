@@ -149,4 +149,100 @@ describe("sequencing", function(){
     });
   });
   
+  describe("when a message does not have the specified key", function(){
+    var pub, sub;
+    var results = [];
+
+    beforeEach(function(done){
+      pub = new Rabbus.Publisher(wascally, {
+        exchange: exConfig,
+        messageType: msgType1
+      });
+
+      var sequencer = new Sequence.Producer({ key: "non-existent" });
+      pub.use(sequencer.middleware);
+
+      sub = new Rabbus.Subscriber(wascally, {
+        exchange: exConfig,
+        queue: qConfig,
+        messageType: msgType1,
+        routingKeys: msgType1,
+      });
+
+      sub.use(function(msg, properties, actions){
+        results.push(properties.headers["_rabbus_sequence"]);
+        actions.next();
+      });
+
+      sub.subscribe(function(data){
+        done();
+      });
+
+      function pubIt(){
+        pub.publish({
+          id: "qwer-1234a-asdf",
+          foo: "bar"
+        });
+      }
+
+      sub.on("ready", pubIt);
+    });
+
+    it("should not add sequence info", function(){
+      var sequence = results[0];
+      expect(sequence).toBe(undefined);
+    });
+
+    afterEach(function(){
+      sub.stop();
+      Sequence.DefaultStorage.clear("non-existent");
+    });
+  });
+  
+  describe("when processing a message without a sequence header", function(){
+    var pub, sub;
+    var handled = false;
+    var results = [];
+
+    beforeEach(function(done){
+      pub = new Rabbus.Publisher(wascally, {
+        exchange: exConfig,
+        messageType: msgType1
+      });
+
+      sub = new Rabbus.Subscriber(wascally, {
+        exchange: exConfig,
+        queue: qConfig,
+        messageType: msgType1,
+        routingKeys: msgType1,
+      });
+
+      var subSeq = new Sequence.Consumer({ key: "id" });
+      sub.use(subSeq.middleware);
+
+      sub.subscribe(function(data){
+        handled = true;
+        done();
+      });
+
+      function pubIt(){
+        pub.publish({
+          id: "1234asdf",
+          foo: "bar"
+        });
+      }
+
+      sub.on("ready", pubIt);
+    }, 5000);
+
+    it("should not do anything with the message", function(){
+      expect(handled).toBe(true);
+    });
+
+    afterEach(function(){
+      sub.stop();
+      Sequence.DefaultStorage.clear("id");
+    });
+  });
+  
 });
