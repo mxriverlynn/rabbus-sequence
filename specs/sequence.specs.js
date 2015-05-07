@@ -87,7 +87,7 @@ describe("sequencing", function(){
         if (pubCount === 1){
           setTimeout(function(){
             actions.next();
-          }, 25);
+          }, 100);
         } else {
           actions.next();
         }
@@ -129,7 +129,7 @@ describe("sequencing", function(){
       }
 
       sub.on("ready", pubIt);
-    }, 5000);
+    }, 50000);
 
     it("should process them in order", function(){
       var seq1 = results[0];

@@ -9,7 +9,9 @@ var API = {
     if (storage[storageKey]){
       sequence = storage[storageKey];
     } else {
+      var sequenceId = generateId(key, value);
       sequence = {
+        _id: sequenceId,
         key: key,
         value: value,
         lastSent: 0,
@@ -19,6 +21,49 @@ var API = {
     }
 
     cb(null, sequence);
+  },
+
+  getSequenceWithId: function(msgSeq, cb){
+    var storage = this;
+    storage.getSequence(msgSeq.key, msgSeq.value, function(err, sequence){
+      if (err) { return cb(err); }
+
+      var correctSequenceId = (msgSeq._id === sequence._id);
+      if (correctSequenceId){
+        return cb(undefined, sequence);
+      }
+
+      storage.clear(msgSeq.key, msgSeq.value, function(err){
+        if (err) { return cb(err); }
+        return storage.getSequence(msgSeq.key, msgSeq.value, function(err, sequence){
+          cb(err, sequence);
+        });
+      });
+
+    });
+  },
+
+  verifyOrder: function(msgSeq, cb){
+    var storage = this;
+
+    function done(isInOrder){
+      cb(null, isInOrder);
+    }
+
+    storage.getSequenceWithId(msgSeq, function(err, sequence){
+      if (err) { return cb(err); }
+
+      var isInOrder = (msgSeq.number === (sequence.lastProcessed + 1));
+
+      if (isInOrder){
+        storage.incrementProcessed(sequence, function(err, sequence){
+          if (err) { return cb(err); }
+          done(isInOrder);
+        });
+      } else {
+        done(isInOrder);
+      }
+    });
   },
 
   incrementSent: function(sequence, cb){
@@ -49,6 +94,11 @@ var API = {
 
 function getStorageKey(key, value){
   return key + "." + value;
+}
+
+function generateId(key, value){
+  var dateString = Date.now().toString();
+  return key + "." + value + "." + dateString;
 }
 
 module.exports = API;
