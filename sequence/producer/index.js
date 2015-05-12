@@ -28,10 +28,13 @@ Producer.prototype.middleware = function(message, headers, actions){
       if (err) { return actions.error(err); }
 
       var number = sequence.lastSent;
+      var key = (sequence.key || "").toString();
+      var value = (sequence.value || "").toString();
+
       var headerSequence = {
         _id: sequence._id,
-        key: sequence.key,
-        value: sequence.value,
+        key: key,
+        value: value,
         number: number
       };
       headers["_rabbus_sequence"] = headerSequence;
