@@ -1,8 +1,7 @@
 # Rabbus-Sequence
 
 Middleware for [Rabbus](/derickbailey/rabbus) and RabbitMQ to
-brute-force process messages in order, even when they are received out of
-order.
+reject old messages.
 
 ## About Rabbus-Sequence
 
@@ -14,10 +13,14 @@ incremented for each message that is sent.
 
 On the consumer side of things, the middleware reads the 
 sequence of each message that comes in. If the sequence number
-of the message is the one that is expected, it allows the
+of the message is the one that is expected, or one in the future (
+a higher sequence number) it allows the
 message to continue through the other middleware / processing.
-If the sequence number is incorrect, it nacks the message back
-to the end of the line in the RMQ queue.
+If the sequence number is old, it rejects the message, dropping it
+from RabbitMQ entirely.
+
+Due to the nature of this plug rejecting out of sequence / old messages,
+you should have a dead letter exchange configured for your queue.
 
 ## Using Rabbus-Sequence
 
