@@ -1,3 +1,5 @@
+var MessageOrder = require("../messageOrder");
+
 var storage = {};
 
 var API = {
@@ -36,6 +38,7 @@ var API = {
       storage.clear(msgSeq.key, msgSeq.value, function(err){
         if (err) { return cb(err); }
         return storage.getSequence(msgSeq.key, msgSeq.value, function(err, sequence){
+          sequence._id = msgSeq._id;
           cb(err, sequence);
         });
       });
@@ -43,26 +46,24 @@ var API = {
     });
   },
 
-  verifyOrder: function(msgSeq, cb){
+  checkMessageOrder: function(msgSeq, cb){
     var storage = this;
-
-    function done(isInOrder){
-      cb(null, isInOrder);
-    }
 
     storage.getSequenceWithId(msgSeq, function(err, sequence){
       if (err) { return cb(err); }
 
-      var isInOrder = (msgSeq.number === (sequence.lastProcessed + 1));
+      var currentNumber = (sequence.lastProcessed + 1);
 
-      if (isInOrder){
-        storage.incrementProcessed(sequence, function(err, sequence){
-          if (err) { return cb(err); }
-          done(isInOrder);
-        });
+      var order;
+      if (msgSeq.number < currentNumber){
+        order = MessageOrder.past;
+      } else if (msgSeq.number === currentNumber) {
+        order = MessageOrder.current;
       } else {
-        done(isInOrder);
+        order = MessageOrder.future;
       }
+
+      cb(undefined, order);
     });
   },
 

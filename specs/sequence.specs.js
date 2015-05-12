@@ -67,11 +67,15 @@ describe("sequencing", function(){
     });
   });
 
-  describe("when messages are received out of order", function(){
+  describe("when the second message arrives before the first", function(){
     var pub, sub;
-    var results = [];
+    var handled = [];
+    var rejectSpy;
 
     beforeEach(function(done){
+      var subCount = 0;
+      var pubCount = 0;
+
       pub = new Rabbus.Publisher(wascally, {
         exchange: exConfig,
         messageType: msgType1
@@ -81,7 +85,6 @@ describe("sequencing", function(){
       pub.use(prodSeq.middleware);
 
       // delay the first message
-      var pubCount = 0;
       pub.use(function(msg, headers, actions){
         pubCount += 1;
         if (pubCount === 1){
@@ -100,21 +103,27 @@ describe("sequencing", function(){
         routingKeys: msgType1,
       });
 
+      sub.use(function(message, properties, actions){
+        subCount += 1;
+        if (subCount === 2){
+          rejectSpy = spyOn(actions, "reject").and.callThrough();
+          rejectSpy.and.callFake(function(){
+            done();
+          });
+        }
+
+        actions.next();
+      });
+
       var conSeq = new Sequence.Consumer({ key: "id" });
       sub.use(conSeq.middleware);
 
       sub.use(function(msg, properties, actions){
-        results.push(properties.headers["_rabbus_sequence"]);
+        handled.push(properties.headers["_rabbus_sequence"]);
         actions.next();
       });
 
-      var subCount = 0;
-      sub.subscribe(function(data){
-        subCount += 1;
-        if (subCount >= 2){
-          done();
-        }
-      });
+      sub.subscribe(function(data){});
 
       function pubIt(){
         pub.publish({
@@ -129,18 +138,17 @@ describe("sequencing", function(){
       }
 
       sub.on("ready", pubIt);
-    }, 50000);
+    });
 
-    it("should process them in order", function(){
-      var seq1 = results[0];
-      expect(seq1.key).toBe("id");
-      expect(seq1.value).toBe("1234asdf");
-      expect(seq1.number).toBe(1);
-
-      var seq2 = results[1];
+    it("should process the second message", function(){
+      var seq2 = handled[0];
       expect(seq2.key).toBe("id");
       expect(seq2.value).toBe("1234asdf");
       expect(seq2.number).toBe(2);
+    });
+
+    it("should reject the first message", function(){
+      expect(rejectSpy).toHaveBeenCalled();
     });
 
     afterEach(function(){

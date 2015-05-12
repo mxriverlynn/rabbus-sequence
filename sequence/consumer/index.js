@@ -1,4 +1,5 @@
 var storage = require("../storage");
+var MessageOrder = require("../messageOrder");
 
 // Consumer
 // --------
@@ -22,13 +23,20 @@ Consumer.prototype.middleware = function(message, properties, actions){
   }
 
   // found the sequence header, so handle it.
-  storage.verifyOrder(msgSeq, function(err, isInOrder){
+  storage.checkMessageOrder(msgSeq, function(err, order){
     if (err) { return actions.error(err); }
 
-    if (isInOrder){
-      actions.next();
-    } else {
-      actions.nack();
+    switch (order){
+      case MessageOrder.past:
+        actions.reject();
+        break;
+        
+      default:
+        storage.incrementProcessed(msgSeq, function(err, sequence){
+          if (err) { return actions.error(err); }
+          actions.next();
+        });
+        break;
     }
   });
 };

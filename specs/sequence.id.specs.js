@@ -69,7 +69,7 @@ describe("sequence id", function(){
   });
 
   describe("when a consumer has an id for a key/value, but receives a new id for that key/value, and a message sequence of 1", function(){
-    var pub, sub;
+    var pub, sub, newId;
     var results = [];
 
     beforeEach(function(done){
@@ -81,21 +81,6 @@ describe("sequence id", function(){
       var pubSeq = new Sequence.Producer({ key: "id" });
       pub.use(pubSeq.middleware);
 
-      //hijack the sequence header and update it with a new id
-      var pubCount = 0;
-      pub.use(function(message, headers, actions){
-        pubCount += 1;
-        if (pubCount != 3) { 
-          return actions.next(); 
-        }
-
-        var seq = headers["_rabbus_sequence"];
-        seq._id = "modified.qwer.1234-asdf." + Date.now().toString();
-        seq.number = 1;
-
-        actions.next();
-      });
-
       sub = new Rabbus.Subscriber(wascally, {
         exchange: exConfig,
         queue: qConfig,
@@ -103,20 +88,28 @@ describe("sequence id", function(){
         routingKeys: msgType1,
       });
 
-      var subSeq = new Sequence.Consumer({ key: "id" });
-      sub.use(subSeq.middleware);
-
+      //hijack the sequence header and update it with a new id
       var subCount = 0;
-      sub.use(function(msg, properties, actions){
-        if (subCount === 2){
-          results.push(properties.headers["_rabbus_sequence"]);
-          results.push(msg);
+      sub.use(function(message, properties, actions){
+        subCount += 1;
+        if (subCount != 3) { 
+          return actions.next(); 
         }
+
+        newId = "modified.qwer.1234-asdf." + Date.now().toString();
+
+        var headers = properties.headers;
+        var seq = headers["_rabbus_sequence"];
+        seq._id = newId;
+        seq.number = 1;
+
         actions.next();
       });
 
+      var subSeq = new Sequence.Consumer({ key: "id" });
+      sub.use(subSeq.middleware);
+
       sub.subscribe(function(data){
-        subCount += 1;
         if (subCount === 3){
           done();
         }
@@ -131,24 +124,23 @@ describe("sequence id", function(){
           id: "qwer-1234a-asdf",
           foo: "msg 2"
         });
-        pub.publish({
-          id: "qwer-1234a-asdf",
-          foo: "msg 3"
-        });
+        setTimeout(function(){
+          pub.publish({
+            id: "qwer-1234a-asdf",
+            foo: "msg 3"
+          });
+        }, 25);
       }
 
       sub.on("ready", pubIt);
-    }, 50000);
+    });
 
-    it("should restart the sequence from the new id", function(){
-      var sequence = results[0];
-      var msg = results[1];
-      expect(sequence._id).not.toBe(undefined);
-      expect(sequence.key).toBe("id");
-      expect(sequence.value).toBe("qwer-1234a-asdf");
-      expect(sequence.number).toBe(1);
-
-      expect(msg.foo).toBe("msg 3");
+    it("should restart the sequence from the new id", function(done){
+      Sequence.DefaultStorage.getSequence("id", "qwer-1234a-asdf", function(err, sequence){
+        expect(sequence._id).toBe(newId);
+        expect(sequence.lastProcessed).toBe(1);
+        done();
+      });
     });
 
     afterEach(function(){
