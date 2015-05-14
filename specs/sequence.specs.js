@@ -69,7 +69,7 @@ describe("sequencing", function(){
     });
   });
 
-  fdescribe("when the second message arrives before the first", function(){
+  describe("when the second message arrives before the first", function(){
     var pub, sub, id;
     var handled = [];
     var rejectSpy;
@@ -150,7 +150,7 @@ describe("sequencing", function(){
       });
     }, 5000);
 
-    fit("should process the second message", function(){
+    it("should process the second message", function(){
       var seq2 = handled[0];
       expect(seq2.key).toBe("id");
       expect(seq2.value).toBe(id);
