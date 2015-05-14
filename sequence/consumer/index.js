@@ -13,8 +13,7 @@ function Consumer(options){
 // ---
 
 Consumer.prototype.middleware = function(message, properties, actions){
-  var keyName = this.options.key;
-  var value = message[keyName];
+  var that = this;
   var msgSeq = properties.headers["_rabbus_sequence"];
 
   // do nothing if there is no sequence header
@@ -30,14 +29,23 @@ Consumer.prototype.middleware = function(message, properties, actions){
       case MessageOrder.past:
         actions.reject();
         break;
+
+      case MessageOrder.current:
+        that.handleSequence(msgSeq, actions);
+        break;
         
       default:
-        storage.incrementProcessed(msgSeq, function(err, sequence){
-          if (err) { return actions.error(err); }
-          actions.next();
-        });
+        that.handleSequence(msgSeq, actions);
         break;
     }
+
+  });
+};
+
+Consumer.prototype.handleSequence = function(msgSeq, actions){
+  storage.incrementProcessed(msgSeq, function(err){
+    if (err) { return actions.error(err); }
+    actions.next();
   });
 };
 

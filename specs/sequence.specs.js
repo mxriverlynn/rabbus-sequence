@@ -12,7 +12,9 @@ describe("sequencing", function(){
 
   var qConfig = {
     name: "sequence.q.1",
-    autoDelete: true
+    autoDelete: true,
+    limit: 1,
+    noBatch: true
   };
 
   describe("when messages are sent", function(){
@@ -67,14 +69,15 @@ describe("sequencing", function(){
     });
   });
 
-  describe("when the second message arrives before the first", function(){
-    var pub, sub;
+  fdescribe("when the second message arrives before the first", function(){
+    var pub, sub, id;
     var handled = [];
     var rejectSpy;
 
     beforeEach(function(done){
+      var now = Date.now();
+      id = now.toString() + "." + Math.random(now);
       var subCount = 0;
-      var pubCount = 0;
 
       pub = new Rabbus.Publisher(wascally, {
         exchange: exConfig,
@@ -86,14 +89,19 @@ describe("sequencing", function(){
 
       // delay the first message
       pub.use(function(msg, headers, actions){
-        pubCount += 1;
-        if (pubCount === 1){
-          setTimeout(function(){
-            actions.next();
-          }, 100);
-        } else {
-          actions.next();
+        var seq = headers["_rabbus_sequence"];
+        var num = seq.number;
+
+        switch(num) {
+          case 1:
+            seq.number = 2;
+            break;
+          case 2:
+            seq.number = 1;
+            break;
         }
+
+        actions.next();
       });
 
       sub = new Rabbus.Subscriber(wascally, {
@@ -127,23 +135,25 @@ describe("sequencing", function(){
 
       function pubIt(){
         pub.publish({
-          id: "1234asdf",
+          id: id,
           foo: "bar"
         });
 
         pub.publish({
-          id: "1234asdf",
+          id: id,
           foo: "quux"
         });
       }
 
-      sub.on("ready", pubIt);
-    });
+      sub.on("ready", function(){
+        setTimeout(pubIt, 500);
+      });
+    }, 5000);
 
-    it("should process the second message", function(){
+    fit("should process the second message", function(){
       var seq2 = handled[0];
       expect(seq2.key).toBe("id");
-      expect(seq2.value).toBe("1234asdf");
+      expect(seq2.value).toBe(id);
       expect(seq2.number).toBe(2);
     });
 

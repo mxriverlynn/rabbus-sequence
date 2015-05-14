@@ -76,11 +76,11 @@ var API = {
     });
   },
 
-  incrementProcessed: function(sequence, cb){
-    this.getSequence(sequence.key, sequence.value, function(err, sequence){
+  incrementProcessed: function(msgSeq, cb){
+    this.getSequence(msgSeq.key, msgSeq.value, function(err, sequence){
       if (err) { return cb(err); }
 
-      sequence.lastProcessed += 1;
+      sequence.lastProcessed = msgSeq.number;
       cb(null, sequence);
     });
   },

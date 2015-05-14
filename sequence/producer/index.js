@@ -39,7 +39,9 @@ Producer.prototype.middleware = function(message, headers, actions){
       };
       headers["_rabbus_sequence"] = headerSequence;
 
-      actions.next();
+      setTimeout(function(){
+        actions.next();
+      }, Math.round(Math.random(Date.now())*1000));
     });
   });
 };
