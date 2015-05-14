@@ -1,6 +1,6 @@
 {
   "name": "rabbus-sequence",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "process messages in sequential order with Rabbus and RabbitMQ",
   "main": "sequence/index.js",
   "scripts": {
