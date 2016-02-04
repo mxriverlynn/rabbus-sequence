@@ -12,18 +12,18 @@ function Consumer(options){
 // API
 // ---
 
-Consumer.prototype.middleware = function(message, properties, actions){
+Consumer.prototype.middleware = function(message, properties, actions, next){
   var that = this;
   var msgSeq = properties.headers["_rabbus_sequence"];
 
   // do nothing if there is no sequence header
   if (!msgSeq){
-    return actions.next();
+    return next();
   }
 
   // found the sequence header, so handle it.
   storage.checkMessageOrder(msgSeq, function(err, order){
-    if (err) { return actions.error(err); }
+    if (err) { return next(err); }
 
     switch (order){
       case MessageOrder.past:
@@ -31,21 +31,21 @@ Consumer.prototype.middleware = function(message, properties, actions){
         break;
 
       case MessageOrder.current:
-        that.handleSequence(msgSeq, actions);
+        that.handleSequence(msgSeq, next);
         break;
         
       default:
-        that.handleSequence(msgSeq, actions);
+        that.handleSequence(msgSeq, next);
         break;
     }
 
   });
 };
 
-Consumer.prototype.handleSequence = function(msgSeq, actions){
+Consumer.prototype.handleSequence = function(msgSeq, next){
   storage.incrementProcessed(msgSeq, function(err){
-    if (err) { return actions.error(err); }
-    actions.next();
+    if (err) { return next(err); }
+    next();
   });
 };
 

@@ -35,9 +35,9 @@ describe("sequence id", function(){
         routingKeys: msgType1,
       });
 
-      sub.use(function(msg, properties, actions){
+      sub.use(function(msg, properties, actions, next){
         results.push(properties.headers["_rabbus_sequence"]);
-        actions.next();
+        next();
       });
 
       sub.subscribe(function(data){
@@ -90,10 +90,10 @@ describe("sequence id", function(){
 
       //hijack the sequence header and update it with a new id
       var subCount = 0;
-      sub.use(function(message, properties, actions){
+      sub.use(function(message, properties, actions, next){
         subCount += 1;
         if (subCount != 3) { 
-          return actions.next(); 
+          return next(); 
         }
 
         newId = "modified.qwer.1234-asdf." + Date.now().toString();
@@ -103,7 +103,7 @@ describe("sequence id", function(){
         seq._id = newId;
         seq.number = 1;
 
-        actions.next();
+        next();
       });
 
       var subSeq = new Sequence.Consumer({ key: "id" });

@@ -11,21 +11,21 @@ function Producer(options){
 // API
 // ---
 
-Producer.prototype.middleware = function(message, headers, actions){
+Producer.prototype.middleware = function(message, headers, next){
   var keyName = this.options.key;
 
   // don't do anything if there is no key
   if (!(keyName in message)){
-    return actions.next();
+    return next();
   }
 
   // found the key, so process it
   var value = message[keyName];
   storage.getSequence(keyName, value, function(err, sequence){
-    if (err) { return actions.error(err); }
+    if (err) { return next(err); }
 
     storage.incrementSent(sequence, function(err, sequence){
-      if (err) { return actions.error(err); }
+      if (err) { return next(err); }
 
       var number = sequence.lastSent;
       var key = (sequence.key || "").toString();
@@ -39,7 +39,7 @@ Producer.prototype.middleware = function(message, headers, actions){
       };
       headers["_rabbus_sequence"] = headerSequence;
 
-      actions.next();
+      next();
     });
   });
 };

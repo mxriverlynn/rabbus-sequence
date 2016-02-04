@@ -37,13 +37,14 @@ describe("sequencing", function(){
         routingKeys: msgType1,
       });
 
-      sub.use(function(msg, properties, actions){
+      sub.use(function(msg, properties, actions, next){
         results.push(properties.headers["_rabbus_sequence"]);
-        actions.next();
+        next();
       });
 
-      sub.subscribe(function(data){
-        done();
+      sub.subscribe(function(data, props, actions, next){
+        actions.ack();
+        setTimeout(done, 500);
       });
 
       function pubIt(){
@@ -87,8 +88,9 @@ describe("sequencing", function(){
       var prodSeq = new Sequence.Producer({ key: "id" });
       pub.use(prodSeq.middleware);
 
-      // delay the first message
-      pub.use(function(msg, headers, actions){
+      // switch the first and second message,
+      // so the second message shows up first
+      pub.use(function(msg, headers, next){
         var seq = headers["_rabbus_sequence"];
         var num = seq.number;
 
@@ -101,7 +103,7 @@ describe("sequencing", function(){
             break;
         }
 
-        actions.next();
+        next();
       });
 
       sub = new Rabbus.Subscriber(wascally, {
@@ -111,7 +113,7 @@ describe("sequencing", function(){
         routingKeys: msgType1,
       });
 
-      sub.use(function(message, properties, actions){
+      sub.use(function(message, properties, actions, next){
         subCount += 1;
         if (subCount === 2){
           rejectSpy = spyOn(actions, "reject").and.callThrough();
@@ -120,18 +122,20 @@ describe("sequencing", function(){
           });
         }
 
-        actions.next();
+        next();
       });
 
       var conSeq = new Sequence.Consumer({ key: "id" });
       sub.use(conSeq.middleware);
 
-      sub.use(function(msg, properties, actions){
+      sub.use(function(msg, properties, actions, next){
         handled.push(properties.headers["_rabbus_sequence"]);
-        actions.next();
+        next();
       });
 
-      sub.subscribe(function(data){});
+      sub.subscribe(function(data, props, actions){
+        actions.ack();
+      });
 
       function pubIt(){
         pub.publish({
@@ -148,7 +152,7 @@ describe("sequencing", function(){
       sub.on("ready", function(){
         setTimeout(pubIt, 500);
       });
-    }, 5000);
+    });
 
     it("should process the second message", function(){
       var seq2 = handled[0];
@@ -187,13 +191,14 @@ describe("sequencing", function(){
         routingKeys: msgType1,
       });
 
-      sub.use(function(msg, properties, actions){
+      sub.use(function(msg, properties, actions, next){
         results.push(properties.headers["_rabbus_sequence"]);
-        actions.next();
+        next();
       });
 
-      sub.subscribe(function(data){
-        done();
+      sub.subscribe(function(data, props, actions, next){
+        actions.ack();
+        setTimeout(done, 500);
       });
 
       function pubIt(){
@@ -238,9 +243,9 @@ describe("sequencing", function(){
       var subSeq = new Sequence.Consumer({ key: "id" });
       sub.use(subSeq.middleware);
 
-      sub.subscribe(function(data){
+      sub.subscribe(function(data, props, actions, next){
         handled = true;
-        done();
+        setTimeout(done, 500);
       });
 
       function pubIt(){
@@ -251,7 +256,7 @@ describe("sequencing", function(){
       }
 
       sub.on("ready", pubIt);
-    }, 5000);
+    });
 
     it("should not do anything with the message", function(){
       expect(handled).toBe(true);
