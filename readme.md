@@ -1,6 +1,6 @@
 # Rabbus-Sequence
 
-Middleware for [Rabbus](/derickbailey/rabbus) and RabbitMQ to
+Middleware for [Rabbus](https://github.com/derickbailey/rabbus) and RabbitMQ to
 reject old messages.
 
 ## About Rabbus-Sequence
@@ -24,7 +24,7 @@ you should have a dead letter exchange configured for your queue.
 
 ## Using Rabbus-Sequence
 
-To use Rabbus-Sequence, you need [Rabbus](/derickbailey/rabbus)
+To use Rabbus-Sequence, you need [Rabbus](https://github.com/derickbailey/rabbus)
 in your system already. Then you need to create an instance of
 a `Sequence.Producer` and `Sequence.Consumer` for each end of
 the pipeline.
